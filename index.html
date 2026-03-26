@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Foxglove Films</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #64603D;
+      --text: #f0ece4;
+      --muted: #c4bf9a;
+      --rule: #7a7550;
+      --placeholder: #55513a;
+      --placeholder-text: #9e9a78;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 300;
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 64px;
+      background: transparent;
+      transition: background 0.3s;
+    }
+    nav.scrolled { background: var(--bg); border-bottom: 1px solid var(--rule); }
+
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      text-decoration: none;
+      font-style: italic;
+      z-index: 101;
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 8px;
+      z-index: 101;
+    }
+    .menu-btn span {
+      display: block;
+      width: 26px;
+      height: 1.5px;
+      background: var(--text);
+      transition: all 0.3s;
+    }
+    .menu-btn.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .menu-btn.open span:nth-child(2) { opacity: 0; }
+    .menu-btn.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    /* ── FULLSCREEN MENU OVERLAY ── */
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 99;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0 80px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    .menu-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .menu-overlay nav-links { list-style: none; }
+
+    .menu-nav-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    .menu-nav-links a {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 300;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
+      display: block;
+      line-height: 1.2;
+    }
+    .menu-nav-links a:hover { color: var(--muted); }
+
+    .menu-social {
+      display: flex;
+      gap: 24px;
+    }
+    .menu-social a {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .menu-social a:hover { color: var(--text); }
+
+    /* ── CAROUSEL (HERO) ── */
+    .carousel {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .carousel-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      padding: 60px 80px;
+    }
+
+    /* Placeholder bg colors per film */
+    .slide-1 { background: #3a3820; }
+    .slide-2 { background: #2e3528; }
+    .slide-3 { background: #352e1e; }
+
+    .slide-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .slide-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slide-placeholder span {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(240,236,228,0.25);
+      font-weight: 500;
+    }
+
+    /* Dark gradient overlay at bottom */
+    .slide-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.15) 50%, transparent 100%);
+    }
+
+    .slide-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .slide-label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .slide-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(36px, 6vw, 72px);
+      font-weight: 300;
+      line-height: 1;
+      margin-bottom: 16px;
+      letter-spacing: 0.01em;
+    }
+
+    .slide-meta {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      margin-bottom: 24px;
+    }
+
+    .slide-btn {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text);
+      border: 1px solid rgba(240,236,228,0.5);
+      background: transparent;
+      padding: 12px 28px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+    .slide-btn:hover { background: rgba(240,236,228,0.1); border-color: var(--text); }
+
+    /* Carousel arrows */
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 28px;
+      padding: 16px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .carousel-arrow:hover { opacity: 1; }
+    .carousel-arrow.prev { left: 24px; }
+    .carousel-arrow.next { right: 24px; }
+
+    /* Carousel dots */
+    .carousel-dots {
+      position: absolute;
+      bottom: 28px;
+      right: 80px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(240,236,228,0.35);
+      cursor: pointer;
+      transition: background 0.3s;
+      border: none;
+      padding: 0;
+    }
+    .dot.active { background: var(--text); }
+
+    /* ── PAGE SECTIONS ── */
+    .page-section {
+      min-height: 100vh;
+      padding: 100px 80px;
+    }
+
+    .section-heading {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 60px;
+    }
+
+    /* ── COMING SOON ── */
+    #films {
+      border-top: 1px solid var(--rule);
+    }
+
+    .films-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+    }
+
+    .film-item {
+      position: relative;
+      aspect-ratio: 16/9;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--placeholder);
+    }
+
+    .film-item-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .film-item:hover .film-item-img { transform: scale(1.04); }
+
+    .film-item-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 60%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 28px 32px;
+    }
+
+    .film-item-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .film-item-placeholder span {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(240,236,228,0.2);
+    }
+
+    .film-item-tag {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .film-item-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(20px, 2.5vw, 30px);
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .film-item-info {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── ABOUT ── */
+    #about {
+      border-top: 1px solid var(--rule);
+    }
+
+    .about-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .about-photo-placeholder {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: var(--placeholder);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .about-photo-placeholder span {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--placeholder-text);
+    }
+
+    .about-photo {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      display: block;
+    }
+
+    .about-text h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 32px;
+    }
+
+    .about-text p {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 19px;
+      line-height: 1.85;
+      margin-bottom: 20px;
+      opacity: 0.92;
+    }
+    .about-text strong { font-weight: 500; }
+
+    .about-links {
+      display: flex;
+      gap: 24px;
+      margin-top: 36px;
+    }
+    .about-links a {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .about-links a:hover { color: var(--text); }
+
+    /* ── PRESS ── */
+    #press {
+      border-top: 1px solid var(--rule);
+      min-height: auto;
+      padding: 80px;
+    }
+
+    .press-list { list-style: none; }
+    .press-item { border-bottom: 1px solid var(--rule); }
+    .press-item a {
+      display: flex;
+      align-items: baseline;
+      padding: 18px 0;
+      text-decoration: none;
+      color: var(--text);
+      transition: opacity 0.18s;
+    }
+    .press-item a:hover { opacity: 0.65; }
+    .press-left { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .press-outlet {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .press-headline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+    .press-film {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+      margin-left: 24px;
+      flex-shrink: 0;
+    }
+    .press-arrow-icon { margin-left: 10px; color: var(--muted); }
+
+    /* ── CONTACT ── */
+    #contact {
+      border-top: 1px solid var(--rule);
+      min-height: auto;
+      padding: 80px;
+    }
+
+    .contact-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+    }
+
+    .contact-info h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(28px, 3vw, 44px);
+      font-weight: 300;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .contact-info p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 28px;
+    }
+    .contact-links { display: flex; flex-direction: column; gap: 12px; }
+    .contact-links a {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .contact-links a:hover { color: var(--muted); }
+
+    .contact-form { display: flex; flex-direction: column; }
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid var(--rule);
+      padding: 14px 0;
+    }
+    .form-row label {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .form-row input, .form-row textarea {
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: var(--text);
+      resize: none;
+    }
+    .form-row input::placeholder, .form-row textarea::placeholder { color: var(--placeholder-text); }
+    .form-row textarea { min-height: 80px; }
+    .form-submit-row { padding: 20px 0 0; }
+
+    .btn {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-outline {
+      border: 1px solid rgba(240,236,228,0.45);
+      background: transparent;
+      color: var(--text);
+      padding: 12px 28px;
+    }
+    .btn-outline:hover { border-color: var(--text); background: rgba(240,236,228,0.07); }
+
+    .form-success {
+      display: none;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 17px;
+      color: var(--muted);
+      padding-top: 14px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 28px 80px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 24px; }
+      .carousel-slide { padding: 40px 24px; }
+      .carousel-dots { right: 24px; }
+      .page-section { padding: 80px 24px; }
+      #press, #contact { padding: 60px 24px; }
+      .films-grid { grid-template-columns: 1fr; }
+      .about-inner { grid-template-columns: 1fr; gap: 40px; }
+      .contact-inner { grid-template-columns: 1fr; gap: 40px; }
+      .menu-overlay { padding: 0 32px; }
+      footer { padding: 24px; flex-direction: column; gap: 10px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MENU OVERLAY -->
+  <div class="menu-overlay" id="menuOverlay">
+    <ul class="menu-nav-links">
+      <li><a href="#films" onclick="closeMenu()">Films</a></li>
+      <li><a href="#about" onclick="closeMenu()">About</a></li>
+      <li><a href="#press" onclick="closeMenu()">Press</a></li>
+      <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
+    </ul>
+    <div class="menu-social">
+      <a href="https://www.instagram.com/steph.roush/" target="_blank">Instagram</a>
+      <a href="https://www.imdb.com/name/nm10880394/" target="_blank">IMDb</a>
+      <a href="mailto:stephanie@foxglovefilms.com">Email</a>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav id="mainNav">
+    <a href="#" class="nav-logo">Foxglove Films</a>
+    <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- ── CAROUSEL HERO ── -->
+  <div class="carousel" id="carousel">
+    <div class="carousel-track" id="carouselTrack">
+
+      <!-- SLIDE 1: UNION COUNTY -->
+      <div class="carousel-slide slide-1">
+        <div class="slide-placeholder"><span>Film still — replace me</span></div>
+        <div class="slide-overlay"></div>
+        <div class="slide-content">
+          <div class="slide-label">Now at Sundance</div>
+          <h2 class="slide-title">Union County</h2>
+          <p class="slide-meta">Directed by Adam Meeks &nbsp;·&nbsp; Will Poulter &amp; Noah Centineo</p>
+          <a href="#films" class="slide-btn">Learn More</a>
+        </div>
+      </div>
+
+      <!-- SLIDE 2: STRESS POSITIONS -->
+      <div class="carousel-slide slide-2">
+        <div class="slide-placeholder"><span>Film still — replace me</span></div>
+        <div class="slide-overlay"></div>
+        <div class="slide-content">
+          <div class="slide-label">Sundance '24 · NEON</div>
+          <h2 class="slide-title">Stress Positions</h2>
+          <p class="slide-meta">Directed by Theda Hammel &nbsp;·&nbsp; John Early</p>
+          <a href="#films" class="slide-btn">Learn More</a>
+        </div>
+      </div>
+
+      <!-- SLIDE 3: NOTICE TO QUIT -->
+      <div class="carousel-slide slide-3">
+        <div class="slide-placeholder"><span>Film still — replace me</span></div>
+        <div class="slide-overlay"></div>
+        <div class="slide-content">
+          <div class="slide-label">Now on MUBI</div>
+          <h2 class="slide-title">Notice to Quit</h2>
+          <p class="slide-meta">Directed by Simon Hacker &nbsp;·&nbsp; Michael Zegen</p>
+          <a href="https://mubi.com/en/us/films/notice-to-quit" target="_blank" class="slide-btn">Watch on MUBI</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Arrows -->
+    <button class="carousel-arrow prev" onclick="moveSlide(-1)">&#8592;</button>
+    <button class="carousel-arrow next" onclick="moveSlide(1)">&#8594;</button>
+
+    <!-- Dots -->
+    <div class="carousel-dots" id="carouselDots">
+      <button class="dot active" onclick="goToSlide(0)"></button>
+      <button class="dot" onclick="goToSlide(1)"></button>
+      <button class="dot" onclick="goToSlide(2)"></button>
+    </div>
+  </div>
+
+  <!-- ── COMING SOON ── -->
+  <section class="page-section" id="films">
+    <div class="section-heading">Coming Soon</div>
+    <div class="films-grid">
+
+      <!-- ACT ONE -->
+      <div class="film-item">
+        <div class="film-item-placeholder"><span>Still — replace me</span></div>
+        <div class="film-item-overlay">
+          <div class="film-item-tag">Coming Soon</div>
+          <div class="film-item-title">Act One</div>
+          <div class="film-item-info">[Director · Cast coming soon]</div>
+        </div>
+      </div>
+
+      <!-- SYSTEM OF COLORS -->
+      <div class="film-item">
+        <div class="film-item-placeholder"><span>Still — replace me</span></div>
+        <div class="film-item-overlay">
+          <div class="film-item-tag">Coming Soon</div>
+          <div class="film-item-title">System of Colors</div>
+          <div class="film-item-info">[Director · Cast coming soon]</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── ABOUT ── -->
+  <section class="page-section" id="about">
+    <div class="section-heading">About</div>
+    <div class="about-inner">
+      <div class="about-photo-placeholder">
+        <span>Photo — replace me</span>
+      </div>
+      <div class="about-text">
+        <h2>Foxglove Films</h2>
+        <p><strong>Foxglove Films</strong> loves working with up-and-coming directors, helping them hone and shape their unique vision. Recent credits include Adam Meeks' <em>Union County</em>, starring Will Poulter and Noah Centineo, which premiered in the U.S. Dramatic Competition at the 2026 Sundance Film Festival.</p>
+        <p>Previous credits include Theda Hammel's <em>Stress Positions</em>, starring John Early, which premiered in Dramatic Competition at the 2024 Sundance Film Festival, played New Directors/New Films Closing Night (2024), and was distributed by NEON, and Simon Hacker's directorial debut <em>Notice to Quit</em> (2024, MUBI), starring Michael Zegen. Forthcoming projects include features from filmmakers Sophia Takal and Stephen Cone.</p>
+        <p>Prior to Foxglove, Stephanie produced the Emmy-nominated Netflix Original documentary series <em>Principles of Pleasure</em>, which premiered on Netflix in 2022. She won a James Beard Media Award for her documentary work with chef Vivian Howard in 2018. Her writing has been featured in The New York Times, Filmmaker Mag, and VICE, among other publications.</p>
+        <p>She was a 2024 Gotham / Cannes Producers Network Fellow. She grew up in the Pacific Northwest, attended Middlebury College, and lives in Brooklyn with her husband and their two cats, Ziggy and Finn.</p>
+        <div class="about-links">
+          <a href="https://www.instagram.com/steph.roush/" target="_blank">Instagram ↗</a>
+          <a href="https://www.imdb.com/name/nm10880394/" target="_blank">IMDb ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRESS ── -->
+  <section id="press">
+    <div style="padding: 0 80px;">
+      <div class="section-heading" style="padding-top: 80px;">Press</div>
+    </div>
+    <ul class="press-list" style="padding: 0 80px;">
+      <li class="press-item">
+        <a href="#" target="_blank">
+          <div class="press-left">
+            <span class="press-outlet">Publication</span>
+            <span class="press-headline">[Add press headline here]</span>
+          </div>
+          <span class="press-film">Union County</span>
+          <span class="press-arrow-icon">→</span>
+        </a>
+      </li>
+      <li class="press-item">
+        <a href="#" target="_blank">
+          <div class="press-left">
+            <span class="press-outlet">Publication</span>
+            <span class="press-headline">[Add press headline here]</span>
+          </div>
+          <span class="press-film">Stress Positions</span>
+          <span class="press-arrow-icon">→</span>
+        </a>
+      </li>
+      <li class="press-item">
+        <a href="https://filmmakermagazine.com/127432-simon-hacker-notice-to-quit/" target="_blank">
+          <div class="press-left">
+            <span class="press-outlet">Filmmaker Magazine</span>
+            <span class="press-headline">Punching Above My Weight — Simon Hacker on Notice to Quit</span>
+          </div>
+          <span class="press-film">Notice to Quit</span>
+          <span class="press-arrow-icon">→</span>
+        </a>
+      </li>
+      <li class="press-item">
+        <a href="#" target="_blank">
+          <div class="press-left">
+            <span class="press-outlet">Publication</span>
+            <span class="press-headline">[Add press headline here]</span>
+          </div>
+          <span class="press-film">Foxglove Films</span>
+          <span class="press-arrow-icon">→</span>
+        </a>
+      </li>
+    </ul>
+    <div style="padding: 20px 80px 80px;">
+      <a href="#" style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;font-weight:500;">See All →</a>
+    </div>
+  </section>
+
+  <!-- ── CONTACT ── -->
+  <section id="contact" style="border-top: 1px solid var(--rule); padding: 80px;">
+    <div class="section-heading">Contact</div>
+    <div class="contact-inner">
+      <div class="contact-info">
+        <h3>Get in touch.</h3>
+        <p>Foxglove Films — Brooklyn, New York</p>
+        <div class="contact-links">
+          <a href="https://www.instagram.com/steph.roush/" target="_blank">↗ Instagram</a>
+          <a href="https://www.imdb.com/name/nm10880394/" target="_blank">↗ IMDb</a>
+          <a href="mailto:stephanie@foxglovefilms.com">↗ Email</a>
+        </div>
+      </div>
+      <form class="contact-form" onsubmit="handleSubmit(event)">
+        <div class="form-row">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div class="form-row">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-row">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" rows="4" required></textarea>
+        </div>
+        <div class="form-submit-row">
+          <button type="submit" class="btn btn-outline">Send Message →</button>
+          <p class="form-success" id="formSuccess">Thanks — message received.</p>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>Foxglove Films — Brooklyn, New York</span>
+    <span>© 2026 Foxglove Films</span>
+  </footer>
+
+  <script>
+    // ── NAV scroll behavior
+    window.addEventListener('scroll', () => {
+      document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 60);
+    });
+
+    // ── MENU
+    function toggleMenu() {
+      const overlay = document.getElementById('menuOverlay');
+      const btn = document.getElementById('menuBtn');
+      overlay.classList.toggle('open');
+      btn.classList.toggle('open');
+    }
+    function closeMenu() {
+      document.getElementById('menuOverlay').classList.remove('open');
+      document.getElementById('menuBtn').classList.remove('open');
+    }
+
+    // ── CAROUSEL
+    let current = 0;
+    const total = 3;
+    let autoplay;
+
+    function updateCarousel() {
+      document.getElementById('carouselTrack').style.transform = `translateX(-${current * 100}%)`;
+      document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    }
+
+    function moveSlide(dir) {
+      current = (current + dir + total) % total;
+      updateCarousel();
+      resetAutoplay();
+    }
+
+    function goToSlide(i) {
+      current = i;
+      updateCarousel();
+      resetAutoplay();
+    }
+
+    function resetAutoplay() {
+      clearInterval(autoplay);
+      autoplay = setInterval(() => moveSlide(1), 6000);
+    }
+
+    resetAutoplay();
+
+    // ── CONTACT FORM
+    function handleSubmit(e) {
+      e.preventDefault();
+      document.getElementById('formSuccess').style.display = 'block';
+      e.target.reset();
+    }
+  </script>
+</body>
+</html>
